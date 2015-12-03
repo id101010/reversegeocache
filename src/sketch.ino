@@ -1,12 +1,13 @@
-/* 
+/*
  * Reverse Geocache
- *   
+ *
  * A geocache device which unlocks in a specific area.
- * 
- * Parts used: 
+ *
+ * Parts used:
  * -----------
  * - Arduino UNO R3
  * - Ultimate GPS logger shield
+ * - 16x2 LCD Shield
  * - 9V Battery
  */
 #include <math.h>
@@ -23,11 +24,12 @@ const float deg2rad = 0.01745329251994;
 const float rEarth = 6371000.0;                 // Earths radius in meters
 float range = 9999;                             // Distance between src and pos
 String destination = "N46 59.776, E007 27.771";
+//String destination = "N46 55.090, E007 26.442";     // Gurten
 String position = "";                           // read from GPS
 String tmp = "";
 
 SoftwareSerial mySerial(3,2);                   // Software Serial on 3 (rx) and 2 (tx)
-LiquidCrystal lcd(8, 9, 4, 5, 6, 7);            // Init 16x2 LCD 
+LiquidCrystal lcd(8, 9, 4, 5, 6, 7);            // Init 16x2 LCD
 Adafruit_GPS GPS(&mySerial);                    // Use software serial for gps com
 
 float lat1 = 0;
@@ -38,16 +40,19 @@ float lon2 = 0;
 // Prototypes
 void useInterrupt(boolean);
 void print_message(String Line1, String Line2);
-
-/*******************************************/
-//String destination = "N46 55.090, W7 26.442";     // Gurten: N 46 55.090 E 7 26.442
-/*******************************************/
+void useInterrupt(boolean v);
+void print_message(String Line1, String Line2);
+float haversine (float lat1, float lon1, float lat2, float lon2);
+float string2lon(String position);
+float string2lat(String position);
+String gps2string(void);
+String int2fw(int x, int n);
 
 void setup()
 {
     lcd.begin(16, 2);
     lcd.clear();
-    
+
     //Serial.begin(9600);
     //Serial.println("[DEBUGGING INFORMATIONS]:");
 
@@ -63,13 +68,13 @@ void loop()
 {
     if (GPS.newNMEAreceived()) {                // Read nmea string if available
         if (!GPS.parse(GPS.lastNMEA())) {       // Parse string if possible
-            return;             
+            return;
         }
     }
 
     if (GPS.fix) {                              // If there was a fix
         position = gps2string();                // get position string
-        
+
         lat1 = string2lat(position);
         lat2 = string2lat(destination);
         lon1 = string2lon(position);
@@ -79,7 +84,7 @@ void loop()
 
         tmp = String(range);
         tmp += " [m]";
-        print_message("I wand up.", tmp);
+        print_message("Me wants up!", tmp);
 
     } else {
         print_message("Hello Mischa!", "Take me outside!"); // No fix available
@@ -119,7 +124,7 @@ SIGNAL(TIMER0_COMPA_vect)
 {
     char c = GPS.read();    // Read from serial input
 
-    if (GPSECHO){           // If GPSECHO is enabled
+    if (GPSECHO) {          // If GPSECHO is enabled
         if (c) {
             UDR0 = c;       // Send nmea char by char
         }
@@ -134,7 +139,7 @@ SIGNAL(TIMER0_COMPA_vect)
  **************************************************/
 void useInterrupt(boolean v)
 {
-    if (v) {                    
+    if (v) {
         OCR0A = 0xAF;           // Set up timer0
         TIMSK0 |= _BV(OCIE0A);  // Enable timer0
     } else {
@@ -183,13 +188,13 @@ String gps2string(void)
     mm = (int) latitude % 100;
     mmm = (int) round(1000 * (latitude - floor(latitude)));
     gps2lat = lat + int2fw(dd, 2) + " " + int2fw(mm, 2) + "." + int2fw(mmm, 3);
-    
+
     // lon string
     dd = (int) longitude/100;
     mm = (int) longitude % 100;
     mmm = (int) round(1000 * (longitude - floor(longitude)));
     gps2lon = lon + int2fw(dd, 3) + " " + int2fw(mm, 2) + "." + int2fw(mmm, 3);
-    
+
     // Assemble
     return (gps2lat + ", " + gps2lon);
 }
@@ -205,13 +210,13 @@ float string2lat(String position)
 {
     // returns radians: e.g. String position = "N38 58.892, W076 29.177";
     float lat = ((position.charAt(1) - '0') * 10.0) + \
-                ((position.charAt(2) - '0') * 1.0) + \ 
+                ((position.charAt(2) - '0') * 1.0) + \
                 ((position.charAt(4) - '0') / 6.0) + \
-                ((position.charAt(5) - '0') / 60.0) + \ 
+                ((position.charAt(5) - '0') / 60.0) + \
                 ((position.charAt(7) - '0') / 600.0) + \
-                ((position.charAt(8) - '0') / 6000.0) + \ 
+                ((position.charAt(8) - '0') / 6000.0) + \
                 ((position.charAt(9) - '0') / 60000.0);
-    
+
     lat *= deg2rad;
 
     if (position.charAt(0) == 'S') {
@@ -228,18 +233,18 @@ float string2lat(String position)
  *  Descr:      returns the float representation of
  *              the current longitude.
  **************************************************/
-float string2lon (String position)
+float string2lon(String position)
 {
     // returns radians: e.g. String position = "N38 58.892, W076 29.177";
     float lon = ((position.charAt(13) - '0') * 100.0) + \
-                ((position.charAt(14) - '0') * 10.0) + \ 
-                ((position.charAt(15) - '0') * 1.0) + \ 
-                ((position.charAt(17) - '0') / 6.0) + \ 
-                ((position.charAt(18) - '0') / 60.0) + \ 
-                ((position.charAt(20) - '0') / 600.0) + \ 
-                ((position.charAt(21) - '0') / 6000.0) + \ 
+                ((position.charAt(14) - '0') * 10.0) + \
+                ((position.charAt(15) - '0') * 1.0) + \
+                ((position.charAt(17) - '0') / 6.0) + \
+                ((position.charAt(18) - '0') / 60.0) + \
+                ((position.charAt(20) - '0') / 600.0) + \
+                ((position.charAt(21) - '0') / 6000.0) + \
                 ((position.charAt(22) - '0') / 60000.0);
-    
+
     lon *= deg2rad;
 
     if (position.charAt(12) == 'W') {
@@ -256,14 +261,14 @@ float string2lon (String position)
  *  Descr:      Calculates the distance between
  *              two points given by (lat1/2 lon1/2)
  **************************************************/
-float haversine (float lat1, float lon1, float lat2, float lon2)
+float haversine(float lat1, float lon1, float lat2, float lon2)
 {
     // returns the great-circle distance between two points
     float h =   sq((sin((lat1 - lat2) / 2.0))) + \
                 (cos(lat1) * cos(lat2) * \
-                sq((sin((lon1 - lon2) / 2.0))));
+                 sq((sin((lon1 - lon2) / 2.0))));
 
     float d = 2.0 * rEarth * asin (sqrt(h));
-    
+
     return d;
 }
