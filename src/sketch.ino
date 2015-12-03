@@ -18,13 +18,11 @@
 // Defines
 #define GPSECHO         false                   // True -> debug GPS raw
 #define ANTIFLICKER     1000                    // Timeout for lcd
+#define DEG2RAD         (0.01745329251994f)     // Multiply deg to get rad
+#define REARTH          (6371000.0f)            // Earths radius in meters
 
 // Declarations
-const float deg2rad = 0.01745329251994;
-const float rEarth = 6371000.0;                 // Earths radius in meters
 float range = 9999;                             // Distance between src and pos
-String destination = "N46 59.776, E007 27.771";
-//String destination = "N46 55.090, E007 26.442";     // Gurten
 String position = "";                           // read from GPS
 String tmp = "";
 
@@ -36,6 +34,9 @@ float lat1 = 0;
 float lat2 = 0;
 float lon1 = 0;
 float lon2 = 0;
+
+//String destination = "N46 59.776, E007 27.771";   // Test Zollikofen
+String destination = "N46 55.090, E007 26.442";     // Gurten
 
 // Prototypes
 void useInterrupt(boolean);
@@ -84,10 +85,10 @@ void loop()
 
         tmp = String(range);
         tmp += " [m]";
-        print_message("Me wants up!", tmp);
+        print_message("Walk further!", tmp);
 
     } else {
-        print_message("Hello Mischa!", "Take me outside!"); // No fix available
+        print_message("No GPS!", "Take me outside!"); // No fix available
     }
 
     if (range < 20.0) {
@@ -217,7 +218,7 @@ float string2lat(String position)
                 ((position.charAt(8) - '0') / 6000.0) + \
                 ((position.charAt(9) - '0') / 60000.0);
 
-    lat *= deg2rad;
+    lat *= DEG2RAD;
 
     if (position.charAt(0) == 'S') {
         lat *= -1;    // Correct for hemispposition
@@ -245,7 +246,7 @@ float string2lon(String position)
                 ((position.charAt(21) - '0') / 6000.0) + \
                 ((position.charAt(22) - '0') / 60000.0);
 
-    lon *= deg2rad;
+    lon *= DEG2RAD;
 
     if (position.charAt(12) == 'W') {
         lon *= -1;    // Correct for hemispposition
@@ -268,7 +269,7 @@ float haversine(float lat1, float lon1, float lat2, float lon2)
                 (cos(lat1) * cos(lat2) * \
                  sq((sin((lon1 - lon2) / 2.0))));
 
-    float d = 2.0 * rEarth * asin (sqrt(h));
+    float d = 2.0 * REARTH * asin (sqrt(h));
 
     return d;
 }
