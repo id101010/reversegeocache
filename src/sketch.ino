@@ -40,10 +40,9 @@ String destination = "N46 55.090, E007 26.442";     // Gurten
 
 // Prototypes
 void useInterrupt(boolean);
-void print_message(String Line1, String Line2);
+void printMessage16x2(String line1, String line2);
 void useInterrupt(boolean v);
-void print_message(String Line1, String Line2);
-float haversine (float lat1, float lon1, float lat2, float lon2);
+float haversine(float lat1, float lon1, float lat2, float lon2);
 float string2lon(String position);
 float string2lat(String position);
 String gps2string(void);
@@ -81,35 +80,35 @@ void loop()
         lon1 = string2lon(position);
         lon2 = string2lon(destination);
 
-        range = haversine(lat1, lon1, lat2, lon2);   // calculate dist to target
+        range = haversine(lat1, lon1, lat2, lon2);      // calculate dist to target
 
         tmp = String(range);
         tmp += " [m]";
-        print_message("Walk further!", tmp);
+        printMessage16x2("Walk further!", tmp);
+
+        if (range < 20.0) {
+            printMessage16x2("Unlocked!", "Password");     // Destination reached
+        }
 
     } else {
-        print_message("No GPS!", "Take me outside!"); // No fix available
-    }
-
-    if (range < 20.0) {
-        print_message("Unlocked!", "Password"); // Destination reached
+        printMessage16x2("No GPS!", "Take me outside!");   // No fix available
     }
 }
 
 
 /**************************************************
- *  Name:       print_message()
+ *  Name:       printMessage16x2()
  *  Returns:    nothing
  *  Params:     Line1, Line2
  *  Descr:      Print two strings on a 16x2 lcd
  **************************************************/
-void print_message(String Line1, String Line2)
+void printMessage16x2(String line1, String line2)
 {
     lcd.clear();
     lcd.setCursor(0,0);
-    lcd.print(Line1);
+    lcd.print(line1);
     lcd.setCursor(0,1);
-    lcd.print(Line2);
+    lcd.print(line2);
     delay(ANTIFLICKER);
 }
 
